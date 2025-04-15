@@ -11,7 +11,6 @@ class GestionDesTheme extends Model
 
     protected $fillable = [
         'SpecialiteID',
-        'SectionID', // ✅ ajouté ici
         'GroupID',
         'ThemeID',
         'DepartementID'
@@ -22,11 +21,6 @@ class GestionDesTheme extends Model
         return $this->belongsTo(Specialite::class, 'SpecialiteID');
     }
 
-    public function section()
-    {
-        return $this->belongsTo(Section::class, 'SectionID'); // ✅ relation section
-    }
-
     public function group()
     {
         return $this->belongsTo(Group::class, 'GroupID');
@@ -34,14 +28,16 @@ class GestionDesTheme extends Model
 
     public function etudiants()
     {
-        return $this->belongsToMany(Etudiant::class, 'gestion_theme_etudiant', 'GestionThemeID', 'EtudiantID');
+        return $this->belongsToMany(Etudiant::class, 'gestion_theme_etudiant', 'GestionThemeID', 'EtudiantID')
+                    ->withPivot('id');
     }
 
     public function professeurs()
     {
         return $this->belongsToMany(Professeur::class, 'gestion_theme_professeur', 'GestionThemeID', 'ProfesseurID')
-                    ->withPivot('role'); // ✅ utile si tu veux accéder au rôle
+                    ->withPivot('role');
     }
+    
 
     public function theme()
     {
@@ -52,6 +48,8 @@ class GestionDesTheme extends Model
     {
         return $this->belongsTo(Departement::class, 'DepartementID');
     }
-    
+    public function getGroupsAttribute()
+{
+    return $this->etudiants->pluck('group.Nom')->unique()->implode(', ');
 }
-
+}

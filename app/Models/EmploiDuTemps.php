@@ -12,6 +12,7 @@ class EmploiDuTemps extends Model
     protected $fillable = [
         'Jour', 'TimeSlot', 'SectionID', 'ParcoursID', 'NiveauID', 
         'SpecialiteID', 'GroupID', 'ModuleID', 'ActiviteID', 'ProfesseurID', 'LocalID',
+        'departement_id'
     ];
 
     // Define relationships if needed
@@ -90,6 +91,10 @@ public function getModulesBySection($id)
     return response()->json(Module::where('SectionID', $id)->get());
 }
 
+public function departement()
+{
+    return $this->belongsTo(Departement::class, 'DepartementID');
+}
     
 
 

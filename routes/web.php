@@ -87,3 +87,9 @@ Route::get('/specialites/{id}/sections', [GestionDesThemesController::class, 'ge
 
 Route::get('/get-groups-by-section/{id}', [App\Http\Controllers\GroupeController::class, 'getGroupesBySection']);
 Route::get('/get-etudiants-by-group/{groupID}', [App\Http\Controllers\EtudiantController::class, 'getByGroup']);
+// Gestion des thèmes
+Route::resource('gestiondesthemes', GestionDesThemesController::class);
+Route::get('/get-students-info', [GestionDesThemesController::class, 'getStudentsInfo']);
+Route::get('/professeurs/{id}', [ProfesseurController::class, 'show']);
+Route::get('/get-professor-by-theme/{themeId}', [GestionDesThemesController::class, 'getProfessorByTheme']);
+Route::get('/get-all-professors', [GestionDesThemesController::class, 'getAllProfessors']);

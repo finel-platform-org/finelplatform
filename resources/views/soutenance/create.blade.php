@@ -1,126 +1,146 @@
 <x-app-layout>
     <x-slot name="header">
-<div class="container">
-    <h2>Créer un Emploi de Soutenance</h2>
-    @if ($errors->any())
-    <div class="alert alert-danger">
-        <ul class="mb-0">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
-
-    <form action="{{ route('soutenance.store') }}" method="POST">
-        @csrf
-
-        
-
-       <!-- Sélection du Thème -->
-       <div class="mb-3">
-            <label for="theme" class="form-label">Thème</label>
-            <select id="theme" name="ThemeID" class="form-control" required>
-                <option value="">Sélectionner un thème</option>
-                @foreach($themes as $theme)
-                    <option value="{{ $theme->ThemeID }}">{{ $theme->Nom }}</option>
-                @endforeach
-            </select>
+        <div class="container">
+            <h2 class="mb-4">Création de l'Emploi du Soutenance</h2>
+            <p>Choisir les informations ici</p>
         </div>
+    </x-slot>
 
-        <div class="mb-3">
-            <label for="professeur" >Professeur</label>
-            <select id="professeur" name="ProfesseurID" class="form-control" required></select>
-        </div>
+    <div class="container">
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
-        <!-- Champs remplis automatiquement -->
-        <div class="mb-3">
-            <label for="etudiant" class="form-label">Étudiant</label>
-            <select  id="etudiant" name="EtudiantID" class="form-control" required></select>
-        </div>
+        <form action="{{ route('soutenance.store') }}" method="POST">
+            @csrf
 
-        <div class="mb-3">
-            <label for="specialite" class="form-label">Spécialité</label>
-            <input type="text" id="specialite" class="form-control" disabled>
-<input type="hidden" id="specialite_id" name="SpecialiteID">
+            <!-- Hidden field for selected day -->
+            <input type="hidden" name="Jour" value="{{ request('jour') }}">
 
-        </div>
+            <!-- Sélection du Thème -->
+            <div class="mb-3">
+                <label for="theme" class="form-label">Thème</label>
+                <select id="theme" name="ThemeID" class="form-control" required>
+                    <option value="">Sélectionner un thème</option>
+                    @foreach($themes as $theme)
+                        <option value="{{ $theme->ThemeID }}">{{ $theme->Nom }}</option>
+                    @endforeach
+                </select>
+            </div>
 
-        <div class="mb-3">
-            <label for="groupe" class="form-label">Groupe</label>
-            <input type="text" id="groupe" class="form-control" disabled>
+            <!-- Auto-filled fields -->
+            <div class="mb-3">
+                <label for="encadrant" class="form-label">Encadrant</label>
+                <input type="text" id="encadrant" class="form-control" readonly>
+                <input type="hidden" id="encadrant_id" name="ProfesseurID">
+            </div>
 
-<!-- Champ caché : contient le vrai ID -->
-<input type="hidden" id="groupe_id" name="GroupID">
-        </div>
+            <div class="mb-3">
+                <label for="sous_encadrant" class="form-label">Sous-encadrant</label>
+                <input type="text" id="sous_encadrant" class="form-control" readonly>
+                <input type="hidden" id="sous_encadrant_id" name="SousEncadrantID">
+            </div>
 
-        <!-- Sélection de l'Heure de Début -->
-        <div class="mb-3">
-            <label for="HeureDebut" class="form-label">Heure Début</label>
-            <select id="HeureDebut" name="HeureDebut" class="form-control" required>
-                <option value="">Sélectionner une heure</option>
-                @for ($i = 8; $i <= 18; $i++)
-                    <option value="{{ $i }}:00">{{ $i }}:00</option>
-                    <option value="{{ $i }}:30">{{ $i }}:30</option>
-                @endfor
-            </select>
-        </div>
-        <input type="hidden" name="Jour" value="{{ request('jour') }}">
-
-
-        <!-- Sélection de l'Heure de Fin -->
-        <div class="mb-3">
-            <label for="HeureFin" class="form-label">Heure Fin</label>
-            <select id="HeureFin" name="HeureFin" class="form-control" required>
-                <option value="">Sélectionner une heure</option>
-                @for ($i = 8; $i <= 18; $i++)
-                    <option value="{{ $i }}:00">{{ $i }}:00</option>
-                    <option value="{{ $i }}:30">{{ $i }}:30</option>
-                @endfor
-            </select>
-        </div>
-
-        <!-- Sélection du Local -->
-        <div class="mb-3">
-            <label for="local" class="form-label">Local</label>
-            <select id="local" name="LocalID" class="form-control" required>
-                <option value="">Sélectionner un local</option>
-                @foreach($locals as $local)
-                    <option value="{{ $local->LocalID }}">{{ $local->Nom }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <!-- Bouton de confirmation -->
-        <button type="submit" class="btn btn-primary">Confirmer</button>
-    </form>
+            <div class="mb-3">
+    <label class="form-label">Étudiants concernés</label>
+    <textarea id="etudiants_liste" class="form-control" rows="3" readonly></textarea>
 </div>
 
-<!-- Script pour le remplissage automatique -->
-<script>
+
+            <div class="mb-3">
+                <label for="specialite" class="form-label">Spécialité</label>
+                <input type="text" id="specialite" class="form-control" disabled>
+                <input type="hidden" id="specialite_id" name="SpecialiteID">
+            </div>
+
+            <div class="mb-3">
+    <label class="form-label">Groupes concernés</label>
+    <textarea id="groupes_liste" class="form-control" readonly></textarea>
+</div>
+
+            <!-- Time selection -->
+            <div class="mb-3">
+                <label for="HeureDebut" class="form-label">Heure Début</label>
+                <select id="HeureDebut" name="HeureDebut" class="form-control" required>
+                    <option value="">Sélectionner une heure</option>
+                    @for ($i = 8; $i <= 18; $i++)
+                        <option value="{{ $i }}:00">{{ $i }}:00</option>
+                        <option value="{{ $i }}:30">{{ $i }}:30</option>
+                    @endfor
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="HeureFin" class="form-label">Heure Fin</label>
+                <select id="HeureFin" name="HeureFin" class="form-control" required>
+                    <option value="">Sélectionner une heure</option>
+                    @for ($i = 8; $i <= 18; $i++)
+                        <option value="{{ $i }}:00">{{ $i }}:00</option>
+                        <option value="{{ $i }}:30">{{ $i }}:30</option>
+                    @endfor
+                </select>
+            </div>
+
+            <!-- Local selection -->
+            <div class="mb-3">
+                <label for="local" class="form-label">Local</label>
+                <select id="local" name="LocalID" class="form-control" required>
+                    <option value="">Sélectionner un local</option>
+                    @foreach($locals as $local)
+                        <option value="{{ $local->LocalID }}">{{ $local->Nom }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Confirmer</button>
+            <a href="{{ route('soutenance.index') }}" class="btn btn-secondary">Annuler</a>
+        </form>
+    </div>
+
+    <script>
 document.getElementById('theme').addEventListener('change', function() {
-    
     let themeID = this.value;
 
     if (themeID) {
         fetch(`/api/get-gestion-theme-by-theme?theme=${themeID}`)
         .then(response => response.json())
         .then(data => {
-            document.getElementById('professeur').innerHTML = data.professeurs.map(prof => 
-            `<option value="${prof.id}">${prof.nom}</option>`).join('');
-            document.getElementById('etudiant').innerHTML = data.etudiants.map(etudiant => 
-            `<option value="${etudiant.id}">${etudiant.nom}</option>`).join('');
+            // Remplir les champs professeurs
+            document.getElementById('encadrant').value = data.encadrant?.nom || '';
+            document.getElementById('encadrant_id').value = data.encadrant?.id || '';
+            
+            if (data.sous_encadrant) {
+                document.getElementById('sous_encadrant').value = data.sous_encadrant.nom;
+                document.getElementById('sous_encadrant_id').value = data.sous_encadrant.id;
+            }
+            
+            // Afficher la liste des étudiants
+            const etudiantsText = data.etudiants.map(e => e.nom).join('\n');
+            document.getElementById('etudiants_liste').value = etudiantsText;
+            
+            // Afficher la liste des groupes (uniques)
+            const groupes = [...new Set(data.etudiants.map(e => e.groupe_nom))].join('\n');
+            document.getElementById('groupes_liste').value = groupes;
+            
+            // Remplir spécialité
             document.getElementById('specialite').value = data.specialite.nom;
-document.getElementById('specialite_id').value = data.specialite.id;
-
-document.getElementById('groupe').value = data.groupe.nom;
-document.getElementById('groupe_id').value = data.groupe.id;
-
+            document.getElementById('specialite_id').value = data.specialite.id;
         })
-        .catch(error => console.error('Erreur:', error));
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du chargement des données');
+        });
+    } else {
+        // Réinitialiser les champs
+        document.getElementById('etudiants_liste').value = '';
+        document.getElementById('groupes_liste').value = '';
     }
 });
 </script>
-
 </x-app-layout>

@@ -8,7 +8,7 @@ class Theme extends Model
     protected $table = 'themes'; 
     protected $primaryKey = 'ThemeID';
     public $timestamps = false;
-    protected $fillable = ['Nom', 'ProfesseurID'];
+    protected $fillable = ['Nom', 'ProfesseurID','DepartementID'];
 
     public function professeur()
     {

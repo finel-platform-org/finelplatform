@@ -88,7 +88,7 @@
 </select>
 
 <!-- Professeur -->
-<select name="ProfesseurID" class="form-control">
+<select name="ProfesseurID" class="form-control" required>
     <option disabled selected>Choisir un professeur</option>
     @foreach($professeurs as $p)
         <option value="{{ $p->ProfesseurID }}">{{ $p->Nom }}</option>

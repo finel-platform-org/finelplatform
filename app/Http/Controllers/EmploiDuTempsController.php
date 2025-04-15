@@ -35,12 +35,14 @@ class EmploiDuTempsController extends Controller
         $locaux = Local::all();
         $emplois = EmploiDuTemps::all();
         $semesters = Semester::all();
+        
 
         // Passer les données à la vue
-        $emplois = EmploiDuTemps::with(['niveau', 'group', 'activite', 'module', 'locals', 'professeur', 'specialite', 'semester' ])->get();
+        $emplois = EmploiDuTemps::with(['niveau', 'group', 'activite', 'module', 'locals', 'professeur', 'specialite', 'semester'  ,'departement']) ->where('departement_id', auth()->user()->departement_id)
+        ->get();
 
 
-    return view('emploi_du_temps.index', compact('emplois'));
+    return view ('emploi_du_temps.index', compact('emplois'));
     }
 
     /**
@@ -73,7 +75,7 @@ class EmploiDuTempsController extends Controller
     $groups = Group::all();
    // $modules = Module::all();
     $activites = Activite::all();
-    $professeurs = Professeur::all();
+    $professeurs = Professeur::where('DepartementID', auth()->user()->departement_id)->get();
     $locaux = Local::all();
    
 
@@ -101,6 +103,18 @@ public function store(Request $request)
         'Jour' => 'required|string|in:Lundi,Mardi,Mercredi,Jeudi,Vendredi,Samedi,Dimanche',
         'TimeSlot' => 'required|integer|min:0|max:5',
     ]);
+
+    // Get the authenticated user's departement_id
+    $userDepartementId = auth()->user()->departement_id;
+    
+    if (!$userDepartementId) {
+        return back()->withErrors("L'utilisateur n'est pas associé à un département.")->withInput();
+    }
+
+    // Add the department ID to the validated data
+    $validatedData['departement_id'] = $userDepartementId;
+
+
 
     // Vérification #1 : local déjà pris
     $localConflit = EmploiDuTemps::where('Jour', $validatedData['Jour'])
@@ -189,10 +203,14 @@ public function getNiveauxByParcours($id)
     }
 
     public function getProfsByModule($id)
-    {
-        $profs = Module::findOrFail($id)->professeurs;
-        return response()->json($profs);
-    }
+{
+    $profs = Module::findOrFail($id)
+        ->professeurs()
+        ->where('DepartementID', auth()->user()->departement_id)
+        ->get();
+        
+    return response()->json($profs);
+}
 
     public function getLocauxByActivite($id)
     {

@@ -47,7 +47,7 @@
                         <tr>
                             <td>{{ $professeur->ProfesseurID }}</td>
                             <td>{{ $professeur->Nom }}</td>
-                            <td>{{ $professeur->Prenom }}</td>
+                           
                             <td>{{ $professeur->email }}</td>
                             <td>{{ $professeur->grade }}</td>
                             <td>{{ $professeur->bureau }}</td>

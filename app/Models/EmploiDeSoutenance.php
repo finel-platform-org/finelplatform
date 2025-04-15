@@ -11,10 +11,29 @@ class EmploiDeSoutenance extends Model
     protected $table = 'emploisoutenance';
     protected $primaryKey = 'EmploiSoutenanceID';
     public $timestamps = true;
-    protected $fillable = ['ProfesseurID', 'ThemeID', 'EtudiantID', 'SpecialiteID', 'GroupID', 'HeureDebut', 'HeureFin', 'LocalID'];
+    protected $fillable = [
+        'ProfesseurID', 
+        'SousEncadrantID',
+        'ThemeID', 
+        'EtudiantID', 
+        'SpecialiteID', 
+        'GroupID', 
+        'HeureDebut', 
+        'HeureFin', 
+        'LocalID',
+        'Jour'
+    ];
 
-    public function encadrant() { return $this->belongsTo(Professeur::class, 'EncadrantID'); }
-public function sousEncadrant() { return $this->belongsTo(Professeur::class, 'SousEncadrantID'); }
+    public function professeur()
+    {
+        return $this->belongsTo(Professeur::class, 'ProfesseurID');
+    }
+    public function sousEncadrant()
+    {
+        return $this->belongsTo(Professeur::class, 'SousEncadrantID');
+    }
+
+
     public function theme()
     {
         return $this->belongsTo(Theme::class, 'ThemeID');

@@ -1,7 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Créer une gestion de thème') }}
+            {{ __('Créer une affectation de thème') }}
         </h2>
     </x-slot>
 
@@ -11,216 +12,180 @@
                 <form method="POST" action="{{ route('gestiondesthemes.store') }}">
                     @csrf
 
-                    <!-- Spécialité -->
+                    <!-- Thème -->
                     <div class="mb-4">
-                        <label for="specialite" class="block font-medium text-sm text-gray-700">Spécialité</label>
-                        <select name="SpecialiteID" id="specialite" class="form-control">
-                            <option disabled selected>Choisir une spécialité</option>
-                            @foreach($specialites as $specialite)
-                                <option value="{{ $specialite->SpecialiteID }}">{{ $specialite->Nom }}</option>
+                        <label for="theme" class="block font-medium text-sm text-gray-700">Thème *</label>
+                        <select name="ThemeID" id="theme" class="form-control" required>
+                            <option value="" disabled selected>Choisir un thème</option>
+                            @foreach($themes as $theme)
+                                <option value="{{ $theme->ThemeID }}" data-professor="{{ $theme->professeur_id ?? '' }}">
+                                    {{ $theme->Nom }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
 
-                    <!-- Section -->
                     <div class="mb-4">
-                        <label for="section" class="block font-medium text-sm text-gray-700">Section</label>
-                        <select name="SectionID" id="section" class="form-control">
-                            <option disabled selected>Choisir une section</option>
-                        </select>
-                    </div>
+    <label class="block font-medium text-sm text-gray-700">Encadrant principal *</label>
+    <div class="flex items-center mt-1">
+        <input type="text" id="encadrant-name" class="form-control flex-1" readonly>
+        <input type="hidden" name="ProfesseurID_encadrant" id="encadrant-id">
+        <span id="encadrant-loading" class="ml-2 hidden">
+            <i class="fas fa-spinner fa-spin"></i>
+        </span>
+    </div>
+</div>
 
-                    <!-- Groupe -->
+                    <!-- Sous-encadrant -->
                     <div class="mb-4">
-                        <label for="group" class="block font-medium text-sm text-gray-700">Groupe</label>
-                        <select name="GroupID" id="group" class="form-control">
-                            <option disabled selected>Choisir un groupe</option>
+                        <label for="sous_encadrant" class="block font-medium text-sm text-gray-700">Sous-encadrant</label>
+                        <select name="ProfesseurID_sous_encadrant" id="sous_encadrant" class="form-control">
+                            <option value="" selected>Aucun sous-encadrant</option>
                         </select>
                     </div>
 
                     <!-- Étudiants -->
-                    <div class="mb-4">
-                        <label>Étudiants</label>
-                        <div class="dropdown-field">
-                            <input type="text" readonly placeholder="Sélectionner les étudiants" class="form-control dropdown-toggle" data-target="#etudiants-list">
-                            <div id="etudiants-list" class="dropdown-checkboxes hidden border p-2 mt-1 bg-white shadow">
-                                <input type="text" class="form-control mb-2 search-input" placeholder="Rechercher...">
-                                <div class="checkbox-wrapper">
-                                    @foreach($etudiants as $e)
-                                        <div>
-                                            <input type="checkbox" name="EtudiantID[]" value="{{ $e->EtudiantID }}"> {{ $e->Nom }}
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Étudiants -->
+<div class="mb-4">
+    <label class="block font-medium text-sm text-gray-700">Étudiants *</label>
+    <div class="dropdown-field">
+        <input type="text" id="etudiants-input" readonly placeholder="Sélectionner les étudiants" 
+               class="form-control dropdown-toggle" data-target="#etudiants-list">
+        <div id="etudiants-list" class="dropdown-checkboxes hidden border p-2 mt-1 bg-white shadow">
+            <input type="text" class="form-control mb-2 search-input" placeholder="Rechercher...">
+            <div class="checkbox-wrapper">
+                @foreach($etudiants as $e)
+                    <div>
+                        <input type="checkbox" name="EtudiantID[]" value="{{ $e->EtudiantID }}" 
+                               class="student-checkbox"> {{ $e->Nom }}
                     </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+</div>
+                   
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+    <div>
+        <label class="block font-medium text-sm text-gray-700">Groupe</label>
+        <input type="text" id="group-display" class="form-control" readonly>
+    </div>
+    <div>
+        <label class="block font-medium text-sm text-gray-700">Spécialité</label>
+        <input type="text" id="specialite-display" class="form-control" readonly>
+    </div>
+</div>
+</div>
 
-                    <!-- Encadrants -->
-                    <div class="mb-4">
-                        <label>Encadrants</label>
-                        <div class="dropdown-field">
-                            <input type="text" readonly placeholder="Sélectionner les encadrants" class="form-control dropdown-toggle" data-target="#encadrants-list">
-                            <div id="encadrants-list" class="dropdown-checkboxes hidden border p-2 mt-1 bg-white shadow">
-                                <input type="text" class="form-control mb-2 search-input" placeholder="Rechercher...">
-                                <div class="checkbox-wrapper">
-                                    @foreach($professeurs as $p)
-                                        <div>
-                                            <input type="checkbox" name="ProfesseurID[encadrant][]" value="{{ $p->ProfesseurID }}"> {{ $p->Nom }}
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    
 
-                    <!-- Sous-encadrants -->
-                    <div class="mb-4">
-                        <label>Sous-encadrants</label>
-                        <div class="dropdown-field">
-                            <input type="text" readonly placeholder="Sélectionner les sous-encadrants" class="form-control dropdown-toggle" data-target="#sous-encadrants-list">
-                            <div id="sous-encadrants-list" class="dropdown-checkboxes hidden border p-2 mt-1 bg-white shadow">
-                                <input type="text" class="form-control mb-2 search-input" placeholder="Rechercher...">
-                                <div class="checkbox-wrapper">
-                                    @foreach($professeurs as $p)
-                                        <div>
-                                            <input type="checkbox" name="ProfesseurID[sous_encadrant][]" value="{{ $p->ProfesseurID }}"> {{ $p->Nom }}
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Thème -->
-                    <div class="mb-4">
-                        <label for="theme" class="block font-medium text-sm text-gray-700">Thème</label>
-                        <select name="ThemeID" id="theme" class="form-control">
-                            <option disabled selected>Choisir un thème</option>
-                            @foreach($themes as $theme)
-                                <option value="{{ $theme->ThemeID }}">{{ $theme->Nom }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">Créer la gestion de thème</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).ready(function () {
+       $(document).ready(function() {
+    // Lorsqu'un thème est sélectionné
+    $('#theme').change(function() {
+        const themeId = $(this).val();
+        $('#encadrant-loading').removeClass('hidden');
+        
+        if (themeId) {
+            $.get(`/get-professor-by-theme/${themeId}`, function(data) {
+                $('#encadrant-loading').addClass('hidden');
+                
+                if (data.error) {
+                    alert(data.error);
+                    $('#encadrant-name').val('');
+                    $('#encadrant-id').val('');
+                } else {
+                    $('#encadrant-name').val(data.Nom);
+                    $('#encadrant-id').val(data.ProfesseurID);
+                    
+                    // Mettre à jour les sous-encadrants
+                    $.get('/get-all-professors', function(professeurs) {
+                        let options = '<option value="" selected>Aucun sous-encadrant</option>';
+                        professeurs.forEach(prof => {
+                            if (prof.ProfesseurID != data.ProfesseurID) {
+                                options += `<option value="${prof.ProfesseurID}">${prof.Nom}</option>`;
+                            }
+                        });
+                        $('#sous_encadrant').html(options);
+                    });
+                }
+            }).fail(function() {
+                $('#encadrant-loading').addClass('hidden');
+                alert('Erreur lors de la récupération du professeur');
+                $('#encadrant-name').val('');
+                $('#encadrant-id').val('');
+            });
+        } else {
+            $('#encadrant-name').val('');
+            $('#encadrant-id').val('');
+            $('#sous_encadrant').html('<option value="" selected>Aucun sous-encadrant</option>');
+        }
+    });
 
+    // Gestion des étudiants sélectionnés
+   // Gestion des étudiants sélectionnés
+$(document).on('change', '.student-checkbox', function() {
+    const selectedStudents = $('.student-checkbox:checked').map(function() {
+        return $(this).val();
+    }).get();
 
-
-
+    if (selectedStudents.length > 0) {
+        $.get('/get-students-info', { ids: selectedStudents }, function(data) {
+            let studentNames = [];
+            let groups = new Set();
+            let specialites = new Set();
             
-            // AJAX pour récupérer les sections par spécialité
-            $('#specialite').on('change', function () {
-                let specialiteID = $(this).val();
-                if (specialiteID) {
-                    $.ajax({
-                        url: '/get-sections-by-specialite/' + specialiteID,
-                        type: 'GET',
-                        success: function (data) {
-                            $('#section').empty().append('<option disabled selected>Choisir une section</option>');
-                            data.forEach(section => {
-                                $('#section').append(`<option value="${section.SectionID}">${section.Nom}</option>`);
-                            });
-                        }
-                    });
-                } else {
-                    $('#section').empty().append('<option disabled selected>Choisir une section</option>');
-                }
+            data.students.forEach(student => {
+                studentNames.push(student.name);
+                groups.add(student.group);
+                specialites.add(student.specialite);
             });
-
-            // AJAX pour récupérer les groupes par section
-            $('#section').on('change', function () {
-                let sectionID = $(this).val();
-                if (sectionID) {
-                    $.ajax({
-                        url: '/get-groupes-by-section/' + sectionID,
-                        type: 'GET',
-                        success: function (data) {
-                            $('#group').empty().append('<option disabled selected>Choisir un groupe</option>');
-                            data.forEach(group => {
-                                $('#group').append(`<option value="${group.GroupID}">${group.Nom}</option>`);
-                            });
-                        }
-                    });
-                } else {
-                    $('#group').empty().append('<option disabled selected>Choisir un groupe</option>');
-                }
-            });
-
-           // AJAX pour récupérer les étudiants par groupe
-           $('#group').on('change', function () {
-    let groupID = $(this).val();
-    if (groupID) {
-        $.ajax({
-            url: '{{ url("/get-etudiants-by-group") }}/' + groupID,
-            type: 'GET',
-            success: function (data) {
-                console.log(data);  // Affichez les données pour voir la réponse
-                $('#etudiants-list .checkbox-wrapper').empty();  // Vider la liste des étudiants avant de les remplir
-                if (data.length > 0) {
-                    // Si des étudiants sont trouvés, les afficher
-                    data.forEach(etudiant => {
-                        $('#etudiants-list .checkbox-wrapper').append(`
-                            <div>
-                                <input type="checkbox" name="EtudiantID[]" value="${etudiant.EtudiantID}"> ${etudiant.Nom}
-                            </div>
-                        `);
-                    });
-                } else {
-                    // Si aucun étudiant n'est trouvé, afficher un message
-                    $('#etudiants-list .checkbox-wrapper').append(`
-                        <div>Aucun étudiant trouvé pour ce groupe.</div>
-                    `);
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error("Erreur AJAX:", status, error); // Ajoute des détails sur l'erreur
-                alert("Une erreur est survenue lors de la récupération des étudiants.");
-            }
+            
+            // Mettre à jour le champ d'entrée avec les noms des étudiants
+            $('#etudiants-input').val(studentNames.join(', '));
+            
+            // Mettre à jour les champs Groupe et Spécialité
+            $('#group-display').val(Array.from(groups).join(', '));
+            $('#specialite-display').val(Array.from(specialites).join(', '));
         });
     } else {
-        // Si aucun groupe n'est sélectionné, vider la liste des étudiants
-        $('#etudiants-list .checkbox-wrapper').empty();
+        $('#etudiants-input').val('');
+        $('#group-display').val('');
+        $('#specialite-display').val('');
     }
 });
 
+    // Gestion des menus déroulants
+    $('.dropdown-toggle').click(function() {
+        const target = $(this).data('target');
+        $('.dropdown-checkboxes').not(target).addClass('hidden');
+        $(target).toggleClass('hidden');
+    });
 
+    $(document).click(function(e) {
+        if (!$(e.target).closest('.dropdown-field').length) {
+            $('.dropdown-checkboxes').addClass('hidden');
+        }
+    });
 
-            // Code pour afficher/cacher les menus déroulants
-            $('.dropdown-toggle').click(function () {
-                let target = $(this).data('target');
-                $('.dropdown-checkboxes').not(target).addClass('hidden');
-                $(target).toggleClass('hidden');
-            });
-
-            $(document).click(function (e) {
-                if (!$(e.target).closest('.dropdown-field').length) {
-                    $('.dropdown-checkboxes').addClass('hidden');
-                }
-            });
-
-            $('.search-input').on('keyup', function () {
-                let value = $(this).val().toLowerCase();
-                $(this).siblings('.checkbox-wrapper').children('div').each(function () {
-                    let label = $(this).text().toLowerCase();
-                    $(this).toggle(label.includes(value));
-                });
-            });
+    $('.search-input').on('keyup', function() {
+        const value = $(this).val().toLowerCase();
+        $(this).siblings('.checkbox-wrapper').children('div').each(function() {
+            const label = $(this).text().toLowerCase();
+            $(this).toggle(label.includes(value));
         });
+    });
+});
     </script>
 
     <style>
-       
-
         .form-control {
             display: block;
             width: 100%;
@@ -242,5 +207,22 @@
         .hidden {
             display: none;
         }
+        .form-control[readonly] {
+        background-color: #f3f4f6;
+        cursor: not-allowed;
+    }
+    .fa-spinner {
+        color: #3b82f6;
+    }
+    #etudiants-input {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#etudiants-input::placeholder {
+    color: #6b7280;
+    opacity: 1;
+}
     </style>
 </x-app-layout>

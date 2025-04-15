@@ -12,29 +12,32 @@ class ThemeController extends Controller
 {
     public function index()
     {
-        // Charger tous les thèmes avec le professeur (relation one-to-one)
-        $themes = Theme::with('professeur')->get();
+        // Get the department ID of the logged-in admin
+        $departementId = Auth::user()->departement_id;
+        
+        // Load only themes from the same department
+        $themes = Theme::with('professeur')
+                      ->where('DepartementID', $departementId)
+                      ->get();
 
         return view('themes.index', compact('themes'));
     }
 
     public function create()
-{
-    // Suppression de la vérification Auth
-    // Remplace Auth::user() par un utilisateur générique ou une valeur par défaut
+    {
+        // Get the department ID of the logged-in admin
+        $departementId = Auth::user()->departement_id;
+        
+        if (!$departementId) {
+            return redirect()->back()->with('error', 'Département introuvable pour cet administrateur.');
+        }
 
-    // Exemple sans Auth
-    $adminDepartmentID = 1; // Si tu veux forcer un département particulier pour l'exemple
+        // Get professors from the same department
+        $professeurs = Professeur::where('DepartementID', $departementId)->get();
 
-    if (!$adminDepartmentID) {
-        return redirect()->back()->with('error', 'Département introuvable pour cet administrateur.');
+        return view('themes.create', compact('professeurs'));
     }
 
-    // Récupérer les professeurs du même département
-    $professeurs = Professeur::where('DepartementID', $adminDepartmentID)->get();
-
-    return view('themes.create', compact('professeurs'));
-}
 
 
     public function store(Request $request)
@@ -45,12 +48,17 @@ class ThemeController extends Controller
             'ProfesseurID' => 'required|exists:professeurs,ProfesseurID',
         ]);
 
-        // Création du thème avec le professeur sélectionné (clé étrangère directe)
+
+
+       // Get the department ID of the logged-in admin
+        $departementId = Auth::user()->departement_id;
+
+        // Create the theme with the professor and department
         $theme = Theme::create([
             'Nom' => $request->Nom,
             'ProfesseurID' => $request->ProfesseurID,
+            'DepartementID' => $departementId,
         ]);
-
         // Si tu utilises vraiment une table pivot many-to-many (facultatif)
         // $theme->professeurs()->attach($request->ProfesseurID);
 

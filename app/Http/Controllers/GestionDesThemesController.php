@@ -4,141 +4,151 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\GestionDesTheme;
 use App\Models\Theme;
-use App\Models\Specialite;
-use App\Models\Section;
-use App\Models\Group;
 use App\Models\Etudiant;
 use App\Models\Professeur;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class GestionDesThemesController extends Controller
 {
-   public function index()
+    public function index()
 {
     $admin = Auth::user();
-    $departmentID = $admin->departement_id;
-
     $gestiondesthemes = GestionDesTheme::with([
-        'theme', 
-        'specialite', 
-        'group', 
-        'etudiants',
-        'professeurs' => function ($query) {
+        'theme',
+        'specialite',
+        'etudiants.group', // Charger les groupes via les étudiants
+        'professeurs' => function($query) {
             $query->withPivot('role');
         }
-    ])
-    ->where('DepartementID', $departmentID)
-    ->get();
+    ])->where('DepartementID', $admin->departement_id)->get();
 
     return view('gestiondesthemes.index', compact('gestiondesthemes'));
 }
 
-
     public function create()
     {
-        $themes = Theme::all();
-        $specialites = Specialite::all();
-        $groups = Group::all();
-        $etudiants = Etudiant::all();
-        $professeurs = Professeur::all();
-        $sections = Section::all();
+        $admin = Auth::user();
+        
+        // Filtrer les thèmes par département de l'admin
+        $themes = Theme::where('DepartementID', $admin->departement_id)->get();
+        
+        // Filtrer les professeurs par département de l'admin
+        $professeurs = Professeur::where('DepartementID', $admin->departement_id)->get();
+        
+        $etudiants = Etudiant::with(['group', 'specialite'])->get();
+    
+        return view('gestiondesthemes.create', compact('themes', 'professeurs', 'etudiants'));
+    }
 
-        return view('gestiondesthemes.create', compact('themes', 'specialites', 'groups', 'etudiants', 'professeurs','sections'));
+    public function getProfessorByTheme($themeId)
+    {
+        $theme = Theme::with('professeur')->findOrFail($themeId);
+        
+        if (!$theme->professeur) {
+            return response()->json(['error' => 'Aucun professeur associé à ce thème'], 404);
+        }
+        
+        return response()->json([
+            'ProfesseurID' => $theme->professeur->ProfesseurID,
+            'Nom' => $theme->professeur->Nom
+        ]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'SpecialiteID' => 'required|exists:specialites,SpecialiteID',
-            'SectionID' => 'required|exists:sections,SectionID',
-            'GroupID' => 'required|exists:groups,GroupID',
             'ThemeID' => 'required|exists:themes,ThemeID',
+            'ProfesseurID_encadrant' => 'required|exists:professeurs,ProfesseurID',
+            'ProfesseurID_sous_encadrant' => 'nullable|exists:professeurs,ProfesseurID',
             'EtudiantID' => 'required|array|min:1',
-            'ProfesseurID.encadrant' => 'required|array|min:1',
-            'ProfesseurID.sous_encadrant' => 'nullable|array',
+            'EtudiantID.*' => 'exists:etudiants,EtudiantID',
         ]);
-
-        $admin = Auth::user();
-
-        $gestionTheme = GestionDesTheme::create([
-            'SpecialiteID' => $request->SpecialiteID,
-            'SectionID' => $request->SectionID,
-            'GroupID' => $request->GroupID,
-            'ThemeID' => $request->ThemeID,
-            'DepartementID' => $admin->departement_id,
-        ]);
-
-        if (!$gestionTheme) {
-            return back()->with('error', 'Erreur lors de la création de la gestion de thème.');
-        }
-
-        // Attacher les étudiants
-        $gestionTheme->etudiants()->attach($request->EtudiantID);
-
-        // Attacher les professeurs avec leurs rôles
-        foreach ($request->ProfesseurID['encadrant'] as $profID) {
-            $gestionTheme->professeurs()->attach($profID, [
-                'role' => 'encadrant',
-                
-            ]);
-        }
-
-        if (!empty($request->ProfesseurID['sous_encadrant'])) {
-            foreach ($request->ProfesseurID['sous_encadrant'] as $profID) {
-                $gestionTheme->professeurs()->attach($profID, [
-                    'role' => 'sous_encadrant',
-                    
+    
+        DB::beginTransaction();
+        try {
+            $admin = Auth::user();
+            $etudiants = Etudiant::whereIn('EtudiantID', $request->EtudiantID)->get();
+    
+            $firstStudent = $etudiants->first();
             
-                ]);
+            $gestionTheme = GestionDesTheme::create([
+                'SpecialiteID' => $firstStudent->SpecialiteID,
+                'GroupID' => $firstStudent->GroupID,
+                'ThemeID' => $request->ThemeID,
+                'DepartementID' => $admin->departement_id,
+            ]);
+    
+            // Attacher les étudiants
+            $gestionTheme->etudiants()->attach($request->EtudiantID);
+    
+            // Préparer les données des professeurs
+            $professeursData = [
+                $request->ProfesseurID_encadrant => ['role' => 'encadrant']
+            ];
+    
+            // Ajouter le sous-encadrant si spécifié
+            if ($request->ProfesseurID_sous_encadrant) {
+                $professeursData[$request->ProfesseurID_sous_encadrant] = ['role' => 'sous_encadrant'];
             }
+    
+            // Attacher tous les professeurs en une seule opération
+            $gestionTheme->professeurs()->attach($professeursData);
+    
+            DB::commit();
+            return redirect()->route('gestiondesthemes.index')->with('success', 'Affectation créée avec succès.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Erreur lors de la création: ' . $e->getMessage());
         }
-
-        return redirect()->route('gestiondesthemes.index')->with('success', 'Gestion des thèmes ajoutée avec succès.');
     }
 
     public function destroy($id)
     {
-        $gestionTheme = GestionDesTheme::find($id);
-
-        if (!$gestionTheme) {
-            return redirect()->route('gestiondesthemes.index')->with('error', 'Gestion de thème introuvable.');
+        DB::beginTransaction();
+        try {
+            $gestionTheme = GestionDesTheme::findOrFail($id);
+            $gestionTheme->etudiants()->detach();
+            $gestionTheme->professeurs()->detach();
+            $gestionTheme->delete();
+            
+            DB::commit();
+            return redirect()->route('gestiondesthemes.index')->with('success', 'Affectation supprimée avec succès.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
         }
-
-        $gestionTheme->etudiants()->detach();
-        $gestionTheme->professeurs()->detach();
-        $gestionTheme->delete();
-
-        return redirect()->route('gestiondesthemes.index')->with('success', 'Gestion de thème supprimée avec succès.');
     }
 
-    // 🔹 Appelé via AJAX pour récupérer les sections d’une spécialité
-    public function getSections($specialiteID)
-    {
-        $sections = Section::where('SpecialiteID', $specialiteID)->get(['SectionID', 'Nom']);
-        return response()->json($sections);
-    }
-    public function getGroupesBySection($sectionId)
-    {
-        $groups = Group::where('SectionID', $sectionId)->get(['GroupID', 'Nom']);
-        return response()->json($groups);
-    }
+    public function getStudentsInfo(Request $request)
+{
+    $request->validate([
+        'ids' => 'required|array',
+        'ids.*' => 'exists:etudiants,EtudiantID'
+    ]);
 
-    public function getByGroup($groupID)
-    {
-        // Vérification des étudiants récupérés
-        $etudiants = Etudiant::where('GroupID', $groupID)->get(['EtudiantID', 'Nom']);
-    
-        // Log pour débogage
-        \Log::info('Étudiants récupérés pour le groupe ' . $groupID, $etudiants->toArray());
-    
-        // Retourner les données en format JSON
-        return response()->json($etudiants);
-    }
-    
+    $students = Etudiant::with(['group', 'specialite'])
+                ->whereIn('EtudiantID', $request->ids)
+                ->get();
 
+    return response()->json([
+        'students' => $students->map(function($student) {
+            return [
+                'id' => $student->EtudiantID,
+                'name' => $student->Nom,
+                'group' => $student->group->Nom ?? 'Non défini',
+                'specialite' => $student->specialite->Nom ?? 'Non définie'
+            ];
+        })
+    ]);
+}
 
-    
-
+public function getAllProfessors()
+{
+    $admin = Auth::user();
+    $professeurs = Professeur::where('DepartementID', $admin->departement_id)->get();
+    return response()->json($professeurs);
+}
 
 
 }
