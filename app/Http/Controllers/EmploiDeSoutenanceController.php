@@ -16,6 +16,7 @@ class EmploiDeSoutenanceController extends Controller
     public function index()
     {
         $emplois = EmploiDeSoutenance::with(['professeur', 'sousEncadrant', 'theme', 'etudiant', 'specialite', 'group', 'local'])
+                    ->where('user_id', auth()->id()) // Filtre strict par admin connecté
                     ->orderBy('Jour')
                     ->orderBy('HeureDebut')
                     ->get()
@@ -25,20 +26,30 @@ class EmploiDeSoutenanceController extends Controller
         
         return view('soutenance.index', compact('emplois'));
     }
-    
     public function create()
     {
         $professeurs = Professeur::all();
-        $themes = Theme::all();
+        
+        // Récupérer seulement les thèmes du département de l'admin connecté
+        $themes = Theme::where('DepartementID', auth()->user()->departement_id)
+                    ->get();
+                    
         $locals = Local::all();
+        
         return view('soutenance.create', compact('professeurs', 'themes', 'locals'));
     }
     public function getGestionThemeByTheme(Request $request)
     {
         $themeID = $request->query('theme');
-        $gestionTheme = GestionDesTheme::with(['professeurs', 'etudiants.group', 'specialite'])
-            ->where('ThemeID', $themeID)
-            ->first();
+
+        $theme = Theme::find($themeID);
+    if (!$theme || $theme->DepartementID != auth()->user()->departement_id) {
+        return response()->json(['error' => 'Accès non autorisé à ce thème'], 403);
+    }
+    
+    $gestionTheme = GestionDesTheme::with(['professeurs', 'etudiants.group', 'specialite'])
+        ->where('ThemeID', $themeID)
+        ->first();
     
         if (!$gestionTheme) {
             return response()->json(['error' => 'Aucune correspondance trouvée'], 404);
@@ -82,6 +93,12 @@ class EmploiDeSoutenanceController extends Controller
             'LocalID' => 'required',
             'Jour' => 'required|string',
         ]);
+
+        // Vérification supplémentaire
+    $theme = Theme::find($request->ThemeID);
+    if (!$theme || $theme->DepartementID != auth()->user()->departement_id) {
+        return back()->withErrors(['error' => 'Thème non autorisé'])->withInput();
+    }
     
         // Récupérer la gestion du thème avec les étudiants
         $gestionTheme = GestionDesTheme::with(['etudiants.group', 'specialite'])
@@ -154,6 +171,7 @@ class EmploiDeSoutenanceController extends Controller
                 'Jour' => $request->Jour,
                 'created_at' => $now,
                 'updated_at' => $now,
+                'user_id' => auth()->id(), 
             ];
         }
     

@@ -23,6 +23,10 @@ class Theme extends Model
         'ProfesseurID'
     )->withTimestamps();
 }
+public function departement()
+{
+    return $this->belongsTo(Department::class, 'DepartementID');
+}
 
     
 

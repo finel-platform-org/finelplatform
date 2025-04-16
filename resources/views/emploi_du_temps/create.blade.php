@@ -31,17 +31,16 @@
                     @endif
 
                     <!-- Parcours -->
-<select id="parcours" name="ParcoursID" class="form-control">
+<!-- Parcours -->
+<select id="parcours" name="ParcoursID" class="form-control" required>
     <option disabled selected>Choisir un parcours</option>
-    @foreach($parcours as $p)
-        <option value="{{ $p->ParcoursID }}">{{ $p->Nom }}</option>
-    @endforeach
+    <!-- Rempli dynamiquement via AJAX -->
 </select>
 
 <!-- Niveau -->
-<!-- Niveau -->
-<select id="niveau" name="NiveauID" class="form-control">
+<select id="niveau" name="NiveauID" class="form-control" required>
     <option disabled selected>Choisir un niveau</option>
+    <!-- Rempli dynamiquement via AJAX -->
 </select>
 
 <!-- Semestre -->
@@ -112,21 +111,17 @@
     </div>
     <script>
 $(document).ready(function () {
-    $('#parcours').on('change', function () {
-        let id = $(this).val();
-        $.get('/get-niveaux-by-parcours/' + id, function (data) {
-            $('#niveau').empty().append('<option disabled selected>Choisir un niveau</option>');
-            data.forEach(n => $('#niveau').append(`<option value="${n.NiveauID}">${n.Nom}</option>`));
-        });
+    $.get('/get-parcours-by-departement', function(data) {
+        $('#parcours').empty().append('<option disabled selected>Choisir un parcours</option>');
+        data.forEach(p => $('#parcours').append(`<option value="${p.ParcoursID}">${p.Nom}</option>`));
     });
 
-    $('#niveau').on('change', function () {
-        let id = $(this).val();
 
-        // Charger semestres
-        $.get('/get-semestres-by-niveau/' + id, function (data) {
-            $('#semestre').empty().append('<option disabled selected>Choisir un semestre</option>');
-            data.forEach(s => $('#semestre').append(`<option value="${s.SemestreID}">${s.Nom}</option>`));
+    $('#parcours').on('change', function() {
+        let id = $(this).val();
+        $.get('/get-niveaux-by-parcours/' + id, function(data) {
+            $('#niveau').empty().append('<option disabled selected>Choisir un niveau</option>');
+            data.forEach(n => $('#niveau').append(`<option value="${n.NiveauID}">${n.Nom}</option>`));
         });
 
         // Charger spécialités

@@ -25,4 +25,8 @@ class Niveau extends Model
     {
         return $this->belongsToMany(Semester::class, 'niveau_semester', 'NiveauID', 'SemestreID');
     }
+    public function departement()
+{
+    return $this->belongsTo(Departement::class, 'departement_id', 'DepartementID');
+}
 }

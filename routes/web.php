@@ -93,3 +93,4 @@ Route::get('/get-students-info', [GestionDesThemesController::class, 'getStudent
 Route::get('/professeurs/{id}', [ProfesseurController::class, 'show']);
 Route::get('/get-professor-by-theme/{themeId}', [GestionDesThemesController::class, 'getProfessorByTheme']);
 Route::get('/get-all-professors', [GestionDesThemesController::class, 'getAllProfessors']);
+Route::get('/get-parcours-by-departement', [EmploiDuTempsController::class, 'getParcoursByDepartement']);

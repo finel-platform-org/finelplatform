@@ -21,7 +21,8 @@ class EmploiDeSoutenance extends Model
         'HeureDebut', 
         'HeureFin', 
         'LocalID',
-        'Jour'
+        'Jour',
+        'user_id'
     ];
 
     public function professeur()
@@ -58,4 +59,8 @@ class EmploiDeSoutenance extends Model
     {
         return $this->belongsTo(Local::class, 'LocalID');
     }
+    public function user()
+{
+    return $this->belongsTo(User::class);
+}
 }

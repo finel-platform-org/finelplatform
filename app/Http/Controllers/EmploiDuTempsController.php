@@ -69,8 +69,12 @@ class EmploiDuTempsController extends Controller
 
 
     $sections = Section::with('modules')->get();
-    $parcours = Parcours::all();
-    $niveaux = Niveau::with('semesters')->get();
+    $parcours = Parcours::whereHas('niveaux', function($query) {
+        $query->where('departement_id', auth()->user()->departement_id);
+    })->get();
+    $niveaux = Niveau::where('departement_id', auth()->user()->departement_id)
+                ->with('semesters')
+                ->get();
     $specialites = Specialite::all();
     $groups = Group::all();
    // $modules = Module::all();
@@ -153,10 +157,12 @@ public function store(Request $request)
 }
 
 public function getNiveauxByParcours($id)
-    {
-        $niveaux = Niveau::where('ParcoursID', $id)->get();
-        return response()->json($niveaux);
-    }
+{
+    $niveaux = Niveau::where('ParcoursID', $id)
+                ->where('departement_id', auth()->user()->departement_id)
+                ->get();
+    return response()->json($niveaux);
+}
 
     public function getSemestresByNiveau($id)
     {
@@ -226,7 +232,14 @@ public function getNiveauxByParcours($id)
     return response()->json($modules);
 }
 
-
+public function getParcoursByDepartement()
+{
+    $parcours = Parcours::whereHas('niveaux', function($query) {
+        $query->where('departement_id', auth()->user()->departement_id);
+    })->get();
+    
+    return response()->json($parcours);
+}
 
 
 

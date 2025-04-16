@@ -25,14 +25,18 @@
 
             <!-- Sélection du Thème -->
             <div class="mb-3">
-                <label for="theme" class="form-label">Thème</label>
-                <select id="theme" name="ThemeID" class="form-control" required>
-                    <option value="">Sélectionner un thème</option>
-                    @foreach($themes as $theme)
-                        <option value="{{ $theme->ThemeID }}">{{ $theme->Nom }}</option>
-                    @endforeach
-                </select>
-            </div>
+    <label for="theme" class="form-label">Thème</label>
+    <select id="theme" name="ThemeID" class="form-control" required>
+        <option value="">Sélectionner un thème</option>
+        @if($themes->isEmpty())
+            <option value="" disabled>Aucun thème disponible dans votre département</option>
+        @else
+            @foreach($themes as $theme)
+                <option value="{{ $theme->ThemeID }}">{{ $theme->Nom }}</option>
+            @endforeach
+        @endif
+    </select>
+</div>
 
             <!-- Auto-filled fields -->
             <div class="mb-3">
