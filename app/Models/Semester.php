@@ -10,15 +10,16 @@ class Semester extends Model
     use HasFactory;
     protected $primaryKey = 'SemestreID';
     protected $fillable = ['Nom']; // Ajoute le champ Nom
-    public function niveaux()
-    {
-        return $this->belongsToMany(Niveau::class, 'niveau_semester', 'SemestreID', 'NiveauID');
-    }
+   
     // app/Models/Semester.php
 
-public function modules()
+    public function modules()
+    {
+        return $this->hasMany(Module::class, 'SemestreID');
+    }
+public function niveau()
 {
-    return $this->belongsToMany(Module::class, 'semester_module', 'SemestreID', 'ModuleID');
+    return $this->belongsTo(Niveau::class, 'NiveauID'); // Spécifiez explicitement la clé étrangère
 }
 
 }

@@ -13,7 +13,8 @@ class GestionDesTheme extends Model
         'SpecialiteID',
         'GroupID',
         'ThemeID',
-        'DepartementID'
+        'DepartementID',
+         'EtudiantID'
     ];
 
     public function specialite()
@@ -26,12 +27,7 @@ class GestionDesTheme extends Model
         return $this->belongsTo(Group::class, 'GroupID');
     }
 
-    public function etudiants()
-    {
-        return $this->belongsToMany(Etudiant::class, 'gestion_theme_etudiant', 'GestionThemeID', 'EtudiantID')
-                    ->withPivot('id');
-    }
-
+   
     public function professeurs()
     {
         return $this->belongsToMany(Professeur::class, 'gestion_theme_professeur', 'GestionThemeID', 'ProfesseurID')
@@ -51,5 +47,12 @@ class GestionDesTheme extends Model
     public function getGroupsAttribute()
 {
     return $this->etudiants->pluck('group.Nom')->unique()->implode(', ');
+}
+// app/Models/GestionDesTheme.php
+
+// Retirez la relation many-to-many
+public function etudiant()
+{
+    return $this->belongsTo(Etudiant::class, 'EtudiantID');
 }
 }

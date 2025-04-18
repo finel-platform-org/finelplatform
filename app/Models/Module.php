@@ -17,10 +17,9 @@ class Module extends Model
     }
     // app/Models/Module.php
 
-public function semesters()
-{
-    return $this->belongsToMany(Semester::class, 'semester_module', 'ModuleID', 'SemestreID');
-}
-
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'SemestreID');
+    }
 
 }

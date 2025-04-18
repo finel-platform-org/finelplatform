@@ -21,12 +21,14 @@ class Niveau extends Model
     {
         return $this->belongsTo(Parcours::class, 'ParcoursID');
     }
-    public function semesters()
-    {
-        return $this->belongsToMany(Semester::class, 'niveau_semester', 'NiveauID', 'SemestreID');
-    }
+   
     public function departement()
 {
     return $this->belongsTo(Departement::class, 'departement_id', 'DepartementID');
+}
+public function semesters()
+{
+    // Use the correct foreign key column name here
+    return $this->hasMany(Semester::class, 'NiveauID');
 }
 }

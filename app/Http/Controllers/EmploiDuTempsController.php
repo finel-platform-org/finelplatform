@@ -81,6 +81,7 @@ class EmploiDuTempsController extends Controller
     $activites = Activite::all();
     $professeurs = Professeur::where('DepartementID', auth()->user()->departement_id)->get();
     $locaux = Local::all();
+    
    
 
     return view('emploi_du_temps.create', compact(
@@ -99,7 +100,8 @@ public function store(Request $request)
         'SpecialiteID' => 'required|exists:specialites,SpecialiteID',
         'SemestreID' => 'required|exists:semesters,SemestreID', 
         
-        'GroupID' => 'required|exists:groups,GroupID',
+       'GroupID' => 'required', // on validera plus loin
+
         'ModuleID' => 'required|exists:modules,ModuleID',
         'ActiviteID' => 'required|exists:activites,ActiviteID',
         'ProfesseurID' => 'required|exists:professeurs,ProfesseurID',
@@ -107,7 +109,7 @@ public function store(Request $request)
         'Jour' => 'required|string|in:Lundi,Mardi,Mercredi,Jeudi,Vendredi,Samedi,Dimanche',
         'TimeSlot' => 'required|integer|min:0|max:5',
     ]);
-
+      
     // Get the authenticated user's departement_id
     $userDepartementId = auth()->user()->departement_id;
     
@@ -118,7 +120,7 @@ public function store(Request $request)
     // Add the department ID to the validated data
     $validatedData['departement_id'] = $userDepartementId;
 
-
+        
 
     // Vérification #1 : local déjà pris
     $localConflit = EmploiDuTemps::where('Jour', $validatedData['Jour'])
@@ -164,15 +166,12 @@ public function getNiveauxByParcours($id)
     return response()->json($niveaux);
 }
 
-    public function getSemestresByNiveau($id)
-    {
-        // Modifiez la jointure pour utiliser la bonne colonne de clé primaire
-        $semesters = Semester::where('NiveauID', $id)
-                             ->join('niveau_semester', 'semesters.SemestreID', '=', 'niveau_semester.SemestreID')
-                             ->get();
-        return response()->json($semesters);
-    }
-    
+public function getSemestresByNiveau($id)
+{
+    // Récupère directement les semestres associés au niveau via la clé étrangère
+    $semesters = Semester::where('NiveauID', $id)->get();
+    return response()->json($semesters);
+}
 
 
     public function getSpecialitesByNiveau($id)
@@ -195,18 +194,11 @@ public function getNiveauxByParcours($id)
 
     public function getModulesBySemestre($id)
 {
-    // Récupérer le semestre avec ses modules associés
-    $modules = Semester::findOrFail($id)->modules;
-
-    // Retourner les modules sous forme de réponse JSON
+    $modules = Module::where('SemesterID', $id)->get();
     return response()->json($modules);
 }
 
-    public function getSemestresByModule($id)
-    {
-        $semesters = Module::findOrFail($id)->semesters;
-        return response()->json($semesters);
-    }
+  
 
     public function getProfsByModule($id)
 {

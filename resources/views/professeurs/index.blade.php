@@ -32,9 +32,9 @@
             <table class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                    <!--  <th>ID</th>-->
                         <th>Nom</th>
-                        <th>Prénom</th>
+                       
                         <th>Email</th>
                         <th>Grade</th>
                         <th>Bureau</th>
@@ -45,7 +45,7 @@
                     <!-- Rows for each professor -->
                     @foreach ($professeurs as $professeur)
                         <tr>
-                            <td>{{ $professeur->ProfesseurID }}</td>
+                           <!-- <td>{{ $professeur->ProfesseurID }}</td>-->
                             <td>{{ $professeur->Nom }}</td>
                            
                             <td>{{ $professeur->email }}</td>

@@ -12,19 +12,25 @@ use Illuminate\Support\Facades\DB;
 class GestionDesThemesController extends Controller
 {
     public function index()
-{
-    $admin = Auth::user();
-    $gestiondesthemes = GestionDesTheme::with([
-        'theme',
-        'specialite',
-        'etudiants.group', // Charger les groupes via les étudiants
-        'professeurs' => function($query) {
-            $query->withPivot('role');
-        }
-    ])->where('DepartementID', $admin->departement_id)->get();
-
-    return view('gestiondesthemes.index', compact('gestiondesthemes'));
-}
+    {
+        $admin = Auth::user();
+    
+        // Récupère toutes les gestions par thème, avec leurs étudiants et profs
+        $groupedGestThemes = GestionDesTheme::with([
+            'theme',
+            'specialite',
+            'etudiant.group',
+            'professeurs' => function ($query) {
+                $query->withPivot('role');
+            }
+        ])
+        ->where('DepartementID', $admin->departement_id)
+        ->get()
+        ->groupBy('ThemeID'); // Grouper par thème
+    
+        return view('gestiondesthemes.index', compact('groupedGestThemes'));
+    }
+    
 
     public function create()
     {
@@ -56,69 +62,70 @@ class GestionDesThemesController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'ThemeID' => 'required|exists:themes,ThemeID',
-            'ProfesseurID_encadrant' => 'required|exists:professeurs,ProfesseurID',
-            'ProfesseurID_sous_encadrant' => 'nullable|exists:professeurs,ProfesseurID',
-            'EtudiantID' => 'required|array|min:1',
-            'EtudiantID.*' => 'exists:etudiants,EtudiantID',
-        ]);
-    
-        DB::beginTransaction();
-        try {
-            $admin = Auth::user();
-            $etudiants = Etudiant::whereIn('EtudiantID', $request->EtudiantID)->get();
-    
-            $firstStudent = $etudiants->first();
+{
+    $request->validate([
+        'ThemeID' => 'required|exists:themes,ThemeID',
+        'ProfesseurID_encadrant' => 'required|exists:professeurs,ProfesseurID',
+        'ProfesseurID_sous_encadrant' => 'nullable|exists:professeurs,ProfesseurID',
+        'EtudiantID' => 'required|array',
+        'EtudiantID.*' => 'exists:etudiants,EtudiantID|unique:gestiondesthemes,EtudiantID'
+    ]);
+
+    DB::beginTransaction();
+    try {
+        $admin = Auth::user();
+        
+        foreach ($request->EtudiantID as $etudiantId) {
+            $etudiant = Etudiant::find($etudiantId);
             
             $gestionTheme = GestionDesTheme::create([
-                'SpecialiteID' => $firstStudent->SpecialiteID,
-                'GroupID' => $firstStudent->GroupID,
+                'SpecialiteID' => $etudiant->SpecialiteID,
+                'GroupID' => $etudiant->GroupID,
                 'ThemeID' => $request->ThemeID,
                 'DepartementID' => $admin->departement_id,
+                'EtudiantID' => $etudiantId,
             ]);
-    
-            // Attacher les étudiants
-            $gestionTheme->etudiants()->attach($request->EtudiantID);
-    
-            // Préparer les données des professeurs
+
+            // Attach professors to each created theme assignment
             $professeursData = [
                 $request->ProfesseurID_encadrant => ['role' => 'encadrant']
             ];
-    
-            // Ajouter le sous-encadrant si spécifié
+
             if ($request->ProfesseurID_sous_encadrant) {
                 $professeursData[$request->ProfesseurID_sous_encadrant] = ['role' => 'sous_encadrant'];
             }
-    
-            // Attacher tous les professeurs en une seule opération
-            $gestionTheme->professeurs()->attach($professeursData);
-    
-            DB::commit();
-            return redirect()->route('gestiondesthemes.index')->with('success', 'Affectation créée avec succès.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Erreur lors de la création: ' . $e->getMessage());
-        }
-    }
 
-    public function destroy($id)
-    {
-        DB::beginTransaction();
-        try {
-            $gestionTheme = GestionDesTheme::findOrFail($id);
-            $gestionTheme->etudiants()->detach();
-            $gestionTheme->professeurs()->detach();
-            $gestionTheme->delete();
-            
-            DB::commit();
-            return redirect()->route('gestiondesthemes.index')->with('success', 'Affectation supprimée avec succès.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
+            $gestionTheme->professeurs()->attach($professeursData);
         }
+        
+        DB::commit();
+        return redirect()->route('gestiondesthemes.index')->with('success', 'Affectations créées avec succès.');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('error', 'Erreur lors de la création: ' . $e->getMessage());
     }
+}
+
+public function destroy($id)
+{
+    DB::beginTransaction();
+    try {
+        $gestionTheme = GestionDesTheme::findOrFail($id);
+        
+        // Only detach professors (since students are directly in the table)
+        $gestionTheme->professeurs()->detach();
+        
+        // Delete the record
+        $gestionTheme->delete();
+        
+        DB::commit();
+        return redirect()->route('gestiondesthemes.index')
+               ->with('success', 'Affectation supprimée avec succès.');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
+    }
+}
 
     public function getStudentsInfo(Request $request)
 {

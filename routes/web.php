@@ -94,3 +94,6 @@ Route::get('/professeurs/{id}', [ProfesseurController::class, 'show']);
 Route::get('/get-professor-by-theme/{themeId}', [GestionDesThemesController::class, 'getProfessorByTheme']);
 Route::get('/get-all-professors', [GestionDesThemesController::class, 'getAllProfessors']);
 Route::get('/get-parcours-by-departement', [EmploiDuTempsController::class, 'getParcoursByDepartement']);
+Route::resource('soutenance', EmploiDeSoutenanceController::class)->except(['show']);
+// routes/web.php
+Route::resource('soutenance', EmploiDeSoutenanceController::class);
