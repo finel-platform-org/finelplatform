@@ -33,10 +33,12 @@ class Etudiant extends Model
 {
     return $this->belongsToMany(Professeur::class, 'gestion_theme_professeur', 'EtudiantID', 'ProfesseurID')->withTimestamps();
 }
-public function gestionThemes()
-    {
-        return $this->belongsToMany(GestionDesTheme::class, 'gestion_theme_etudiant', 'EtudiantID', 'GestionThemeID');
-    }
+// app/Models/Etudiant.php
+
+public function gestionTheme()
+{
+    return $this->hasOne(GestionDesTheme::class, 'EtudiantID');
+}
 
 
 }

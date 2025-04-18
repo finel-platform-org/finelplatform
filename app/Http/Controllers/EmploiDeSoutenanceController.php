@@ -23,8 +23,9 @@ class EmploiDeSoutenanceController extends Controller
                     ->groupBy(['Jour', 'ThemeID', function ($item) {
                         return $item->HeureDebut . '-' . $item->HeureFin;
                     }]);
+                    $locals = Local::all(); // Ajoutez cette ligne
         
-        return view('soutenance.index', compact('emplois'));
+        return view('soutenance.index', compact('emplois' , 'locals'));
     }
     public function create()
     {
@@ -108,6 +109,13 @@ class EmploiDeSoutenanceController extends Controller
         if (!$gestionTheme || $gestionTheme->etudiants->isEmpty()) {
             return back()->withErrors(['error' => 'Aucun étudiant trouvé pour ce thème'])->withInput();
         }
+
+
+
+
+
+
+        
     
         // Vérifier les conflits (local et professeur)
         $localConflict = EmploiDeSoutenance::where('Jour', $request->Jour)
@@ -181,6 +189,20 @@ class EmploiDeSoutenanceController extends Controller
         return redirect()->route('soutenance.index')
             ->with('success', count($insertData) . ' emplois de soutenance créés avec succès!');
     }
+
+
+   
+    
+    public function destroy($id)
+    {
+        $emploi = EmploiDeSoutenance::findOrFail($id);
+        $emploi->delete();
+        
+        return redirect()->route('soutenance.index')
+               ->with('success', 'Soutenance supprimée avec succès');
+    }
+
+
 
 
 }

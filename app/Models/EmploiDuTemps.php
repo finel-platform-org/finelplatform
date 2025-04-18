@@ -12,7 +12,7 @@ class EmploiDuTemps extends Model
     protected $fillable = [
         'Jour', 'TimeSlot', 'SectionID', 'ParcoursID', 'NiveauID', 
         'SpecialiteID', 'GroupID', 'ModuleID', 'ActiviteID', 'ProfesseurID', 'LocalID',
-        'departement_id'
+        'departement_id' ,'SemestreID'
     ];
 
     // Define relationships if needed

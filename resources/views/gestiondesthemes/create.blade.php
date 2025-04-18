@@ -136,6 +136,8 @@ $(document).on('change', '.student-checkbox', function() {
         return $(this).val();
     }).get();
 
+    $('#etudiants-ids').val(selectedStudents.join(','));
+
     if (selectedStudents.length > 0) {
         $.get('/get-students-info', { ids: selectedStudents }, function(data) {
             let studentNames = [];
