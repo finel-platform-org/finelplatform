@@ -2,22 +2,23 @@
     <x-slot name="header">
         <div class="container">
             <h2 class="mb-4">Emploi du Temps de Soutenance</h2>
-            <a href="{{ route('soutenance.create') }}" ></a>
         </div>
     </x-slot>
 
     <div class="container">
+
+        <h3 class="text-center my-4">Les emplois de soutenance de cette semaine</h3>
+
         @php
             $jours = ['Samedi', 'Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi'];
         @endphp
 
         @foreach($jours as $jour)
             <div class="mb-5">
-                <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2 no-print">
                     <h4>{{ $jour }}</h4>
-                    <a href="{{ route('soutenance.create', ['jour' => $jour]) }}" 
-                       class="btn btn-outline-primary">
-                       Ajouter pour {{ $jour }}
+                    <a href="{{ route('soutenance.create', ['jour' => $jour]) }}" class="btn btn-outline-primary">
+                        Ajouter pour {{ $jour }}
                     </a>
                 </div>
 
@@ -34,7 +35,7 @@
                                 <th>Salle</th>
                                 <th>Heure Début</th>
                                 <th>Heure Fin</th>
-                                <th>Actions</th>
+                                <th class="no-print">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -55,18 +56,19 @@
                                         <td>{{ $firstEmploi->local->Nom ?? 'N/A' }}</td>
                                         <td>{{ $firstEmploi->HeureDebut }}</td>
                                         <td>{{ $firstEmploi->HeureFin }}</td>
-                                        <td>
-                    
-                                        <form action="{{ route('soutenance.destroy', $firstEmploi->EmploiSoutenanceID) }}" 
-      method="POST" 
-      style="display: inline-block;">
-    @csrf
-    @method('DELETE')
-    <button type="submit" class="btn btn-sm btn-danger" 
-            onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette soutenance?')">
-        <i class="fas fa-trash"></i> Supprimer
-    </button>
-</form>
+                                        <td class="no-print">
+                                            <div class="d-grid gap-2">
+                                                <a href="{{ route('soutenance.edit', $firstEmploi->EmploiSoutenanceID) }}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-edit"></i> Modifier
+                                                </a>
+                                                <form action="{{ route('soutenance.destroy', $firstEmploi->EmploiSoutenanceID) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet emploi?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                        <i class="fas fa-trash"></i> Supprimer
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -78,5 +80,22 @@
                 @endif
             </div>
         @endforeach
+
+        <!-- Boutons en bas -->
+        <div class="text-center mt-4 no-print d-flex justify-content-center gap-3">
+            <button onclick="window.print()" class="btn btn-success">
+                <i class="fas fa-print"></i> Imprimer
+           
+        </div>
+
     </div>
+
+    <!-- Style pour cacher certains éléments à l'impression -->
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
 </x-app-layout>

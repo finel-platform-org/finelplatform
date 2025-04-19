@@ -109,42 +109,75 @@
 
     <script>
 document.getElementById('theme').addEventListener('change', function() {
-    let themeID = this.value;
-
-    if (themeID) {
-        fetch(`/api/get-gestion-theme-by-theme?theme=${themeID}`)
-        .then(response => response.json())
-        .then(data => {
-            // Remplir les champs professeurs
-            document.getElementById('encadrant').value = data.encadrant?.nom || '';
-            document.getElementById('encadrant_id').value = data.encadrant?.id || '';
-            
-            if (data.sous_encadrant) {
-                document.getElementById('sous_encadrant').value = data.sous_encadrant.nom;
-                document.getElementById('sous_encadrant_id').value = data.sous_encadrant.id;
-            }
-            
-            // Afficher la liste des étudiants
-            const etudiantsText = data.etudiants.map(e => e.nom).join('\n');
-            document.getElementById('etudiants_liste').value = etudiantsText;
-            
-            // Afficher la liste des groupes (uniques)
-            const groupes = [...new Set(data.etudiants.map(e => e.groupe_nom))].join('\n');
-            document.getElementById('groupes_liste').value = groupes;
-            
-            // Remplir spécialité
-            document.getElementById('specialite').value = data.specialite.nom;
-            document.getElementById('specialite_id').value = data.specialite.id;
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            alert('Erreur lors du chargement des données');
-        });
-    } else {
-        // Réinitialiser les champs
-        document.getElementById('etudiants_liste').value = '';
-        document.getElementById('groupes_liste').value = '';
+    const themeID = this.value;
+    const baseUrl = window.location.origin;
+    
+    if (!themeID) {
+        clearFields();
+        return;
     }
+
+    fetch(`${baseUrl}/get-gestion-theme-by-theme?theme=${themeID}`, {
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include'
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => { throw new Error(text); });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Update fields with multiple students
+        updateFields(data);
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        alert(`Error loading data: ${error.message}`);
+        clearFields();
+    });
 });
+
+function updateFields(data) {
+    // Encadrant
+    document.getElementById('encadrant').value = data.encadrant?.nom || 'Non spécifié';
+    document.getElementById('encadrant_id').value = data.encadrant?.id || '';
+    
+    // Sous-encadrant
+    document.getElementById('sous_encadrant').value = data.sous_encadrant?.nom || 'Non spécifié';
+    document.getElementById('sous_encadrant_id').value = data.sous_encadrant?.id || '';
+    
+    // Étudiants (multiple)
+    const etudiantsText = data.etudiants?.map(e => e.nom).join('\n') || 'Aucun étudiant trouvé';
+    document.getElementById('etudiants_liste').value = etudiantsText;
+    
+    // Groupes (multiple)
+    const groupesText = data.groups?.map(g => g.nom).join('\n') || 
+                       data.etudiants?.map(e => e.groupe_nom).filter(Boolean).join('\n') || 
+                       'Aucun groupe trouvé';
+    document.getElementById('groupes_liste').value = groupesText;
+    
+    // Specialite
+    document.getElementById('specialite').value = data.specialite?.nom || 'Non spécifiée';
+    document.getElementById('specialite_id').value = data.specialite?.id || '';
+}
+
+function clearFields() {
+    document.getElementById('encadrant').value = '';
+    document.getElementById('encadrant_id').value = '';
+    document.getElementById('sous_encadrant').value = '';
+    document.getElementById('sous_encadrant_id').value = '';
+    document.getElementById('etudiants_liste').value = '';
+    document.getElementById('groupes_liste').value = '';
+    document.getElementById('specialite').value = '';
+    document.getElementById('specialite_id').value = '';
+};
 </script>
 </x-app-layout>

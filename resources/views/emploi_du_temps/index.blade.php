@@ -64,5 +64,11 @@
                 </table>
             </div>
         </div>
+           <!-- Boutons en bas -->
+           <div class="text-center mt-4 no-print d-flex justify-content-center gap-3">
+            <button onclick="window.print()" class="btn btn-success">
+                <i class="fas fa-print"></i> Imprimer
+           
+        </div>
     </div>
 </x-app-layout>

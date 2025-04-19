@@ -23,9 +23,8 @@ class EmploiDeSoutenanceController extends Controller
                     ->groupBy(['Jour', 'ThemeID', function ($item) {
                         return $item->HeureDebut . '-' . $item->HeureFin;
                     }]);
-                    $locals = Local::all(); // Ajoutez cette ligne
         
-        return view('soutenance.index', compact('emplois' , 'locals'));
+        return view('soutenance.index', compact('emplois'));
     }
     public function create()
     {
@@ -41,138 +40,175 @@ class EmploiDeSoutenanceController extends Controller
     }
     public function getGestionThemeByTheme(Request $request)
     {
-        $themeID = $request->query('theme');
-
-        $theme = Theme::find($themeID);
-    if (!$theme || $theme->DepartementID != auth()->user()->departement_id) {
-        return response()->json(['error' => 'Accès non autorisé à ce thème'], 403);
-    }
+        try {
+            $themeID = $request->query('theme');
+            
+            if (!$themeID) {
+                return response()->json(['error' => 'Theme parameter is required'], 400);
+            }
     
-    $gestionTheme = GestionDesTheme::with(['professeurs', 'etudiants.group', 'specialite'])
-        ->where('ThemeID', $themeID)
-        ->first();
+            // Find theme with department check
+            $theme = Theme::where('ThemeID', $themeID)
+                        ->where('DepartementID', auth()->user()->departement_id)
+                        ->first();
     
-        if (!$gestionTheme) {
-            return response()->json(['error' => 'Aucune correspondance trouvée'], 404);
-        }
+            if (!$theme) {
+                return response()->json(['error' => 'Theme not found or unauthorized access'], 404);
+            }
     
-        // Récupérer tous les étudiants avec leurs groupes
-        $etudiants = $gestionTheme->etudiants->map(function($etudiant) {
-            return [
-                'id' => $etudiant->EtudiantID,
-                'nom' => $etudiant->Nom,
-                'groupe_id' => $etudiant->group->GroupID ?? null,
-                'groupe_nom' => $etudiant->group->Nom ?? '—'
+            // Get all gestion themes for this theme (multiple students)
+            $gestionThemes = GestionDesTheme::with([
+                    'professeurs' => function($query) {
+                        $query->withPivot('role');
+                    },
+                    'etudiant.group',
+                    'specialite',
+                    'group'
+                ])
+                ->where('ThemeID', $themeID)
+                ->get();
+    
+            if ($gestionThemes->isEmpty()) {
+                return response()->json(['error' => 'No theme management found'], 404);
+            }
+    
+            // Get unique professors (encadrant/sous-encadrant)
+            $professeurs = $gestionThemes->flatMap->professeurs->unique('ProfesseurID');
+            
+            // Get all students
+            $etudiants = $gestionThemes->map(function($gt) {
+                return [
+                    'id' => $gt->etudiant->EtudiantID,
+                    'nom' => $gt->etudiant->Nom,
+                    'groupe_id' => optional($gt->etudiant->group)->GroupID,
+                    'groupe_nom' => optional($gt->etudiant->group)->Nom ?? '—'
+                ];
+            });
+    
+            // Get unique groups
+            $groups = $gestionThemes->map(function($gt) {
+                return $gt->group ? [
+                    'id' => $gt->group->GroupID,
+                    'nom' => $gt->group->Nom
+                ] : null;
+            })->filter()->unique('id')->values();
+    
+            // Specialties (should be the same for all)
+            $specialite = $gestionThemes->first()->specialite ? [
+                'id' => $gestionThemes->first()->specialite->SpecialiteID,
+                'nom' => $gestionThemes->first()->specialite->Nom
+            ] : null;
+    
+            // Build response data
+            $response = [
+                'encadrant' => $professeurs->firstWhere('pivot.role', 'encadrant') ? [
+                    'id' => $professeurs->firstWhere('pivot.role', 'encadrant')->ProfesseurID,
+                    'nom' => $professeurs->firstWhere('pivot.role', 'encadrant')->Nom
+                ] : null,
+                
+                'sous_encadrant' => $professeurs->firstWhere('pivot.role', 'sous_encadrant') ? [
+                    'id' => $professeurs->firstWhere('pivot.role', 'sous_encadrant')->ProfesseurID,
+                    'nom' => $professeurs->firstWhere('pivot.role', 'sous_encadrant')->Nom
+                ] : null,
+                
+                'etudiants' => $etudiants,
+                'specialite' => $specialite,
+                'groups' => $groups
             ];
-        });
     
-        return response()->json([
-            'encadrant' => $gestionTheme->professeurs
-                ->where('pivot.role', 'encadrant')
-                ->map(fn($prof) => ['id' => $prof->ProfesseurID, 'nom' => $prof->Nom])
-                ->first(),
-            'sous_encadrant' => $gestionTheme->professeurs
-                ->where('pivot.role', 'sous_encadrant')
-                ->map(fn($prof) => ['id' => $prof->ProfesseurID, 'nom' => $prof->Nom])
-                ->first(),
-            'etudiants' => $etudiants,
-            'specialite' => [
-                'id' => $gestionTheme->SpecialiteID,
-                'nom' => $gestionTheme->specialite->Nom,
-            ],
-        ]);
+            return response()->json($response);
+    
+        } catch (\Exception $e) {
+            \Log::error("Error in getGestionThemeByTheme: " . $e->getMessage());
+            return response()->json(['error' => 'Server error: ' . $e->getMessage()], 500);
+        }
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'ThemeID' => 'required',
-            'ProfesseurID' => 'required',
-            'SousEncadrantID' => 'nullable',
-            'HeureDebut' => 'required',
-            'HeureFin' => 'required',
-            'LocalID' => 'required',
-            'Jour' => 'required|string',
-        ]);
+{
+    $request->validate([
+        'ThemeID' => 'required',
+        'ProfesseurID' => 'required',
+        'SousEncadrantID' => 'nullable',
+        'HeureDebut' => 'required',
+        'HeureFin' => 'required',
+        'LocalID' => 'required',
+        'Jour' => 'required|string',
+    ]);
 
-        // Vérification supplémentaire
+    // Vérification supplémentaire
     $theme = Theme::find($request->ThemeID);
     if (!$theme || $theme->DepartementID != auth()->user()->departement_id) {
         return back()->withErrors(['error' => 'Thème non autorisé'])->withInput();
     }
     
-        // Récupérer la gestion du thème avec les étudiants
-        $gestionTheme = GestionDesTheme::with(['etudiants.group', 'specialite'])
-            ->where('ThemeID', $request->ThemeID)
-            ->first();
+    // Récupérer TOUTES les gestions de thème pour ce thème (pour avoir tous les étudiants)
+    $gestionThemes = GestionDesTheme::with(['etudiant.group', 'specialite'])
+        ->where('ThemeID', $request->ThemeID)
+        ->get();
     
-        if (!$gestionTheme || $gestionTheme->etudiants->isEmpty()) {
-            return back()->withErrors(['error' => 'Aucun étudiant trouvé pour ce thème'])->withInput();
-        }
-
-
-
-
-
-
-        
+    if ($gestionThemes->isEmpty()) {
+        return back()->withErrors(['error' => 'Aucun étudiant trouvé pour ce thème'])->withInput();
+    }
     
-        // Vérifier les conflits (local et professeur)
-        $localConflict = EmploiDeSoutenance::where('Jour', $request->Jour)
-            ->where('LocalID', $request->LocalID)
-            ->where(function($query) use ($request) {
-                $query->whereBetween('HeureDebut', [$request->HeureDebut, $request->HeureFin])
-                    ->orWhereBetween('HeureFin', [$request->HeureDebut, $request->HeureFin])
-                    ->orWhere(function($q) use ($request) {
-                        $q->where('HeureDebut', '<=', $request->HeureDebut)
-                          ->where('HeureFin', '>=', $request->HeureFin);
-                    });
-            })
-            ->exists();
+    // Vérifier les conflits (local et professeur)
+    $localConflict = EmploiDeSoutenance::where('Jour', $request->Jour)
+        ->where('LocalID', $request->LocalID)
+        ->where(function($query) use ($request) {
+            $query->whereBetween('HeureDebut', [$request->HeureDebut, $request->HeureFin])
+                ->orWhereBetween('HeureFin', [$request->HeureDebut, $request->HeureFin])
+                ->orWhere(function($q) use ($request) {
+                    $q->where('HeureDebut', '<=', $request->HeureDebut)
+                      ->where('HeureFin', '>=', $request->HeureFin);
+                });
+        })
+        ->exists();
     
-        if ($localConflict) {
-            return back()->withErrors(['error' => 'Ce créneau est déjà réservé dans cette salle.'])->withInput();
-        }
+    if ($localConflict) {
+        return back()->withErrors(['error' => 'Ce créneau est déjà réservé dans cette salle.'])->withInput();
+    }
     
-        $profConflict = EmploiDeSoutenance::where('Jour', $request->Jour)
-            ->where('ProfesseurID', $request->ProfesseurID)
-            ->where(function($query) use ($request) {
-                $query->whereBetween('HeureDebut', [$request->HeureDebut, $request->HeureFin])
-                    ->orWhereBetween('HeureFin', [$request->HeureDebut, $request->HeureFin])
-                    ->orWhere(function($q) use ($request) {
-                        $q->where('HeureDebut', '<=', $request->HeureDebut)
-                          ->where('HeureFin', '>=', $request->HeureFin);
-                    });
-            })
-            ->exists();
+    $profConflict = EmploiDeSoutenance::where('Jour', $request->Jour)
+        ->where('ProfesseurID', $request->ProfesseurID)
+        ->where(function($query) use ($request) {
+            $query->whereBetween('HeureDebut', [$request->HeureDebut, $request->HeureFin])
+                ->orWhereBetween('HeureFin', [$request->HeureDebut, $request->HeureFin])
+                ->orWhere(function($q) use ($request) {
+                    $q->where('HeureDebut', '<=', $request->HeureDebut)
+                      ->where('HeureFin', '>=', $request->HeureFin);
+                });
+        })
+        ->exists();
     
-        if ($profConflict) {
-            return back()->withErrors(['error' => 'Ce professeur a déjà une soutenance prévue à ce créneau.'])->withInput();
-        }
+    if ($profConflict) {
+        return back()->withErrors(['error' => 'Ce professeur a déjà une soutenance prévue à ce créneau.'])->withInput();
+    }
     
-        // Vérifier la correspondance professeur <-> thème
-        $profThemeExists = DB::table('gestion_theme_professeur')
-            ->join('gestiondesthemes', 'gestion_theme_professeur.GestionThemeID', '=', 'gestiondesthemes.GestionThemeID')
-            ->where('gestion_theme_professeur.ProfesseurID', $request->ProfesseurID)
-            ->where('gestiondesthemes.ThemeID', $request->ThemeID)
-            ->exists();
+    // Vérifier la correspondance professeur <-> thème
+    $profThemeExists = DB::table('gestion_theme_professeur')
+        ->join('gestiondesthemes', 'gestion_theme_professeur.GestionThemeID', '=', 'gestiondesthemes.GestionThemeID')
+        ->where('gestion_theme_professeur.ProfesseurID', $request->ProfesseurID)
+        ->where('gestiondesthemes.ThemeID', $request->ThemeID)
+        ->exists();
     
-        if (!$profThemeExists) {
-            return back()->withErrors(['error' => 'Ce professeur n\'est pas associé à ce thème.'])->withInput();
-        }
+    if (!$profThemeExists) {
+        return back()->withErrors(['error' => 'Ce professeur n\'est pas associé à ce thème.'])->withInput();
+    }
     
-        // Préparer les données pour l'insertion multiple
-        $insertData = [];
-        $now = now();
+    // Préparer les données pour l'insertion multiple
+    $insertData = [];
+    $now = now();
     
-        foreach ($gestionTheme->etudiants as $etudiant) {
+    foreach ($gestionThemes as $gestionTheme) {
+        // Vérifier que l'étudiant existe
+        if ($gestionTheme->etudiant) {
             $insertData[] = [
                 'ThemeID' => $request->ThemeID,
                 'ProfesseurID' => $request->ProfesseurID,
                 'SousEncadrantID' => $request->SousEncadrantID,
-                'EtudiantID' => $etudiant->EtudiantID,
+                'EtudiantID' => $gestionTheme->etudiant->EtudiantID,
                 'SpecialiteID' => $gestionTheme->SpecialiteID,
-                'GroupID' => $etudiant->group->GroupID ?? null,
+                'GroupID' => optional($gestionTheme->etudiant->group)->GroupID,
                 'HeureDebut' => $request->HeureDebut,
                 'HeureFin' => $request->HeureFin,
                 'LocalID' => $request->LocalID,
@@ -182,25 +218,69 @@ class EmploiDeSoutenanceController extends Controller
                 'user_id' => auth()->id(), 
             ];
         }
+    }
     
-        // Insertion multiple
-        DB::table('emploisoutenance')->insert($insertData);
+    if (empty($insertData)) {
+        return back()->withErrors(['error' => 'Aucun étudiant valide trouvé pour ce thème'])->withInput();
+    }
     
-        return redirect()->route('soutenance.index')
-            ->with('success', count($insertData) . ' emplois de soutenance créés avec succès!');
+    // Insertion multiple
+    DB::table('emploisoutenance')->insert($insertData);
+    
+    return redirect()->route('soutenance.index')
+        ->with('success', count($insertData) . ' emplois de soutenance créés avec succès!');
+}
+// Add these methods to your EmploiDeSoutenanceController
+
+public function edit($id)
+{
+    $emploi = EmploiDeSoutenance::with(['theme', 'professeur', 'sousEncadrant', 'etudiant', 'specialite', 'group', 'local'])
+                ->where('user_id', auth()->id())
+                ->findOrFail($id);
+
+    $professeurs = Professeur::all();
+    $themes = Theme::where('DepartementID', auth()->user()->departement_id)->get();
+    $locals = Local::all();
+
+    return view('soutenance.edit', compact('emploi', 'professeurs', 'themes', 'locals'));
+}
+
+public function update(Request $request, $id)
+{
+    $emploi = EmploiDeSoutenance::where('user_id', auth()->id())
+                ->findOrFail($id);
+
+    $request->validate([
+        'ThemeID' => 'required',
+        'ProfesseurID' => 'required',
+        'SousEncadrantID' => 'nullable',
+        'HeureDebut' => 'required',
+        'HeureFin' => 'required',
+        'LocalID' => 'required',
+        'Jour' => 'required|string',
+    ]);
+
+    $emploi->update($request->all());
+
+    return redirect()->route('soutenance.index')
+        ->with('success', 'Emploi de soutenance modifié avec succès!');
+}
+
+public function destroy($id)
+{
+    $emploi = EmploiDeSoutenance::findOrFail($id);
+
+    // Vérification que l'emploi appartient au bon département
+    if ($emploi->user_id !== auth()->id()) {
+        return redirect()->route('soutenance.index')->withErrors(['error' => 'Action non autorisée.']);
     }
 
+    $emploi->delete();
 
-   
-    
-    public function destroy($id)
-    {
-        $emploi = EmploiDeSoutenance::findOrFail($id);
-        $emploi->delete();
-        
-        return redirect()->route('soutenance.index')
-               ->with('success', 'Soutenance supprimée avec succès');
-    }
+    return redirect()->route('soutenance.index')->with('success', 'Emploi supprimé avec succès.');
+}
+
+
 
 
 

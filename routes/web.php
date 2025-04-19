@@ -55,7 +55,8 @@ Route::post('/soutenance', [EmploiDeSoutenanceController::class, 'store'])->name
 
 Route::get('/soutenances/create', [EmploiDeSoutenanceController::class, 'create'])->name('soutenances.create');
 Route::post('/soutenances/store', [EmploiDeSoutenanceController::class, 'store'])->name('soutenances.store');
-Route::get('/api/get-gestion-theme-by-theme', [EmploiDeSoutenanceController::class, 'getGestionThemeByTheme']);
+Route::get('/get-gestion-theme-by-theme', [EmploiDeSoutenanceController::class, 'getGestionThemeByTheme'])->name('getGestionThemeByTheme');
+
 
 
 Route::resource('locals', LocalController::class);
@@ -94,6 +95,10 @@ Route::get('/professeurs/{id}', [ProfesseurController::class, 'show']);
 Route::get('/get-professor-by-theme/{themeId}', [GestionDesThemesController::class, 'getProfessorByTheme']);
 Route::get('/get-all-professors', [GestionDesThemesController::class, 'getAllProfessors']);
 Route::get('/get-parcours-by-departement', [EmploiDuTempsController::class, 'getParcoursByDepartement']);
-Route::resource('soutenance', EmploiDeSoutenanceController::class)->except(['show']);
-// routes/web.php
-Route::resource('soutenance', EmploiDeSoutenanceController::class);
+//Route::resource('soutenance', EmploiDeSoutenanceController::class)->except(['show']);
+Route::get('/soutenance/{id}/edit', [EmploiDeSoutenanceController::class, 'edit'])->name('soutenance.edit');
+Route::put('/soutenance/{id}', [EmploiDeSoutenanceController::class, 'update'])->name('soutenance.update');
+Route::delete('/soutenance/{id}', [EmploiDeSoutenanceController::class, 'destroy'])->name('soutenance.destroy');
+
+
+

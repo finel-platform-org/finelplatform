@@ -2,6 +2,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Etudiant;
+
 
 class GestionDesTheme extends Model
 {
@@ -55,4 +57,5 @@ public function etudiant()
 {
     return $this->belongsTo(Etudiant::class, 'EtudiantID');
 }
+
 }
