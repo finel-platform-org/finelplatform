@@ -213,15 +213,24 @@
 
             <button type="submit" class="login-btn">Se connecter</button>
 
+<<<<<<< HEAD
          <!--  <div class="links">
               @if (Route::has('register'))
+=======
+            <div class="links">
+                @if (Route::has('register'))
+>>>>>>> 1cd0c5f6e5e62f29d6aa133909f5e0afacfe481e
                     <a href="{{ route('register') }}">Créer un compte</a>
                 @endif
                 
                 @if (Route::has('password.request'))
                     <a href="{{ route('password.request') }}">Mot de passe oublié ?</a>
                 @endif
+<<<<<<< HEAD
             </div>-->
+=======
+            </div>
+>>>>>>> 1cd0c5f6e5e62f29d6aa133909f5e0afacfe481e
         </form>
     </div>
 </body>

@@ -20,20 +20,38 @@
     </h1>
 </div>
 
+<<<<<<< HEAD
 <!-- Remplacer votre grid actuelle par : -->
 <div class="flex flex-wrap justify-center gap-4 p-4">
     @foreach([
         ['name' => 'Themes', 'count' => 0, 'icon' => '📚'],
+=======
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 p-4">
+    @foreach([
+        ['name' => 'Classes', 'count' => 0, 'icon' => '📚'],
+>>>>>>> 1cd0c5f6e5e62f29d6aa133909f5e0afacfe481e
         ['name' => 'Salles', 'count' => 0, 'icon' => '🏠'],
         ['name' => 'Groups', 'count' => 0, 'icon' => '🏢'],
         ['name' => 'Professeurs', 'count' => 0, 'icon' => '👨‍🏫'],
     ] as $stat)
+<<<<<<< HEAD
         <div class="bg-white/10 backdrop-blur-md border border-white/20 shadow-lg rounded-lg p-4 flex items-center gap-3 min-w-[150px]">
             <div class="text-2xl">{{ $stat['icon'] }}</div>
             <div>
                 <h3 class="text-sm font-semibold">{{ $stat['name'] }}</h3>
                 <p class="text-lg font-bold">{{ $stat['count'] }}</p>
             </div>
+=======
+        <div
+            class="bg-white/10 backdrop-blur-md border border-white/20 text-black shadow-lg hover:shadow-purple-500/40 transition-all duration-300 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:scale-105 group"
+        >
+            <div class="text-5xl mb-2 transition-transform duration-500 group-hover:scale-125">
+                {{ $stat['icon'] }}
+            </div>
+            <h3 class="text-md font-semibold tracking-wide uppercase">{{ $stat['name'] }}</h3>
+            <p class="text-2xl font-bold mt-1 animate-pulse">{{ $stat['count'] }}</p>
+>>>>>>> 1cd0c5f6e5e62f29d6aa133909f5e0afacfe481e
         </div>
     @endforeach
 </div>
@@ -43,6 +61,7 @@
 <style>
  /* dash.css */
 
+<<<<<<< HEAD
  /* Dans votre fichier dash.css */
 .grid-cols-2.md\:grid-cols-4 {
     gap: 1rem; /* Réduire l'espace entre les cartes */
@@ -65,6 +84,8 @@
     font-size: 1.5rem !important; /* Chiffres plus petits */
 }
 
+=======
+>>>>>>> 1cd0c5f6e5e62f29d6aa133909f5e0afacfe481e
 /* Base Styles */
 body {
     position: relative;
